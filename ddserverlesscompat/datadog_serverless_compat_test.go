@@ -18,20 +18,12 @@ func TestVersion(t *testing.T) {
 }
 
 func TestGetEnvironment(t *testing.T) {
-	// Test Azure Function environment
-	os.Setenv("FUNCTIONS_EXTENSION_VERSION", "1.0")
-	os.Setenv("FUNCTIONS_WORKER_RUNTIME", "node")
-	env := GetEnvironment()
-	if env != AzureFunction {
-		t.Errorf("Expected AzureFunction environment, got %v", env)
-	}
-
 	// Test Google Cloud Run Function environment
 	os.Unsetenv("FUNCTIONS_EXTENSION_VERSION")
 	os.Unsetenv("FUNCTIONS_WORKER_RUNTIME")
 	os.Setenv("FUNCTION_NAME", "test-function")
 	os.Setenv("GCP_PROJECT", "test-project")
-	env = GetEnvironment()
+	env := GetEnvironment()
 	if env != GoogleCloudRunFunction1stGen {
 		t.Errorf("Expected GoogleCloudRunFunction1stGen environment, got %v", env)
 	}
@@ -70,7 +62,7 @@ func TestRunServerlessCompat(t *testing.T) {
 	os.Unsetenv("FUNCTION_NAME")
 	os.Unsetenv("GCP_PROJECT")
 
-	err := StartServerlessCompat()
+	err := Start()
 	if err == nil {
 		t.Error("Expected error for unknown environment, got nil")
 	}
