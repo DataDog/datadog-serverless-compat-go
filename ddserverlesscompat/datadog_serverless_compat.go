@@ -49,7 +49,7 @@ func initLogger() {
 	case "error":
 		ddlog = slog.NewLogLogger(handler, slog.LevelError)
 	default:
-		ddlog = slog.NewLogLogger(handler, slog.LevelDebug)
+		ddlog = slog.NewLogLogger(handler, slog.LevelInfo)
 	}
 }
 
@@ -77,9 +77,9 @@ func GetBinaryPath() string {
 	// Determine the appropriate binary path based on the OS
 	var binaryPath string
 	if runtime.GOOS == "windows" {
-		binaryPath = filepath.Join(currentDir, "serverless_function_source_code", "bin", "windows-amd64", "datadog-serverless-compat.exe")
+		binaryPath = filepath.Join(currentDir, "bin", "windows-amd64", "datadog-serverless-compat.exe")
 	} else {
-		binaryPath = filepath.Join(currentDir, "serverless_function_source_code", "bin", "linux-amd64", "datadog-serverless-compat")
+		binaryPath = filepath.Join(currentDir, "bin", "linux-amd64", "datadog-serverless-compat")
 	}
 
 	return binaryPath
