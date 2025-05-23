@@ -83,7 +83,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $GOPROXY_PASSWORD" \
             -d '{"version": "${{ needs.downloadbinaries.outputs.package-version }}"}' \
-            https://proxy.golang.org/github.com/DataDog/datadog-serverless-compat
+            https://proxy.golang.org/github.com/DataDog/datadog-serverless-compat-go
 
   release:
     if: github.event.inputs.publish-package == 'Build and Publish'
