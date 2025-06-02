@@ -1,6 +1,6 @@
 # Datadog Serverless Compatibility Layer for Golang
 
-Datadog library for Go to enable tracing and custom metric submission from [Google Cloud Run Functions (1st gen)](https://cloud.google.com/functions/1stgendocs/concepts/overview).
+Datadog library for Go to enable tracing and custom metric submission from [Google Cloud Run Functions (1st gen)](https://cloud.google.com/functions/1stgendocs/concepts/overview). 
 
 # Getting Started
 

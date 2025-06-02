@@ -1,6 +1,7 @@
 package datadogserverlesscompat
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"log/slog"
@@ -11,14 +12,14 @@ import (
 	"strings"
 )
 
-// go:embed bin
-var bin []byte
+//go:embed internal/artifact/*
+var binFS embed.FS
 
 // ddlog is the logger for the Datadog Serverless Compatibility Layer
 var ddlog *log.Logger
 
 // Version is the current version of the package
-const Version = "0.1.0"
+const Version = "v0.1.0"
 
 // CloudEnvironment represents the different serverless environments supported
 type CloudEnvironment string
@@ -31,12 +32,6 @@ const (
 // init initializes the Datadog Serverless Compatibility Layer on package import
 func init() {
 	initLogger()
-	ddlog.Println("Initializing Datadog Serverless Compatibility Layer")
-	err := Start()
-	if err != nil {
-		ddlog.Printf("Failed to run Serverless Compatibility Layer: %v", err)
-	}
-	ddlog.Println("Datadog Serverless Compatibility Layer initialized")
 }
 
 func initLogger() {
@@ -71,16 +66,25 @@ func GetBinaryPath() string {
 	if userPath := os.Getenv("DD_SERVERLESS_COMPAT_PATH"); userPath != "" {
 		return userPath
 	}
-	currentDir, err := os.Getwd()
+
+	// Create a temporary directory for the binary
+	tempDir, err := os.MkdirTemp("", "datadog-serverless-compat")
 	if err != nil {
-		ddlog.Fatalf("Failed to get current directory: %v", err)
+		ddlog.Fatalf("Failed to create temp directory: %v", err)
 	}
-	// Determine the appropriate binary path based on the OS
-	var binaryPath string
-	if runtime.GOOS == "windows" {
-		binaryPath = filepath.Join(currentDir, "bin", "windows-amd64", "datadog-serverless-compat.exe")
-	} else {
-		binaryPath = filepath.Join(currentDir, "bin", "linux-amd64", "datadog-serverless-compat")
+
+	// Determine the appropriate binary path based on the Linux OS for GCP Cloud Functions
+	binaryName := "linux-amd64/datadog-serverless-compat"
+
+	// Extract the embedded binary to the temp directory
+	binaryPath := filepath.Join(tempDir, filepath.Base(binaryName))
+	binaryData, err := binFS.ReadFile(filepath.Join("internal", "artifact", binaryName))
+	if err != nil {
+		ddlog.Fatalf("Failed to read embedded binary: %v", err)
+	}
+
+	if err := os.WriteFile(binaryPath, binaryData, 0755); err != nil {
+		ddlog.Fatalf("Failed to write binary to temp directory: %v", err)
 	}
 
 	return binaryPath
@@ -103,7 +107,7 @@ func Start() error {
 
 	ddlog.Printf("Platform detected: %s", runtime.GOOS)
 
-	if runtime.GOOS != "linux" {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
 		return fmt.Errorf("Platform %s detected, the Datadog Serverless Compatibility Layer is only supported on Windows and Linux", runtime.GOOS)
 	}
 

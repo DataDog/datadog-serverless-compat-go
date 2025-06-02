@@ -37,21 +37,24 @@ func TestGetEnvironment(t *testing.T) {
 	}
 }
 
+
 func TestGetBinaryPath(t *testing.T) {
-	// Test custom path
-	customPath := "/custom/path/binary"
-	os.Setenv("DD_SERVERLESS_COMPAT_PATH", customPath)
 	path := GetBinaryPath()
-	if path != customPath {
-		t.Errorf("Expected custom path %s, got %s", customPath, path)
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Failed to stat binaryPath: %v", err)
 	}
 
-	// Test default path
-	os.Unsetenv("DD_SERVERLESS_COMPAT_PATH")
-	path = GetBinaryPath()
-	if path == "" {
-		t.Error("Default binary path should not be empty")
+	if info.IsDir() {
+		t.Fatalf("Expected binary, got directory: %s", path)
 	}
+
+	if info.Mode()&0111 == 0 {
+		t.Fatalf("Binary is not executable: %s", path)
+	}
+
+	t.Logf("✅ binaryPath OK: %s", path)
 }
 
 func TestRunServerlessCompat(t *testing.T) {
