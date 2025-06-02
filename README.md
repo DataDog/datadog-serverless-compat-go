@@ -5,3 +5,10 @@ Datadog library for Go to enable tracing and custom metric submission from [Goog
 # Getting Started
 
 - [Install Serverless Monitoring for Google Cloud Run Functions (1st gen)](https://docs.datadoghq.com/serverless/google_cloud_run/functions_gen1?code-lang=go)
+
+## Testing
+tests can be run with `go test -v ./datadogserverlesscompat` or by utilizing the dockerfile to run the tests in a linux container
+```bash
+docker build -t test-package .
+docker run test-package
+```
