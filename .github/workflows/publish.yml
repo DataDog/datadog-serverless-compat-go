@@ -36,20 +36,22 @@ jobs:
           curl --output-dir ./temp/ --create-dirs -O -s -L "https://github.com/DataDog/libdatadog/releases/download/${SERVERLESS_COMPAT_VERSION}/datadog-serverless-agent.zip"
           unzip ./temp/datadog-serverless-agent.zip -d ./temp/datadog-serverless-agent
 
-          mkdir -p bin/linux-amd64
-          cp ./temp/datadog-serverless-agent/datadog-serverless-agent-linux-amd64/datadog-serverless-trace-mini-agent bin/linux-amd64/datadog-serverless-compat
+          mkdir -p datadogserverlesscompat/internal/bin/linux-amd64
+          cp ./temp/datadog-serverless-agent/datadog-serverless-agent-linux-amd64/datadog-serverless-trace-mini-agent datadogserverlesscompat/internal/bin/linux-amd64/datadog-serverless-compat
+      - name: Commit embedded binary
+        run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git add datadogserverlesscompat/internal/bin/linux-amd64/datadog-serverless-compat
+          git commit -m "Add embedded binary for Serverless Compatibility Layer ${{ steps.serverlesscompatbinary.outputs.serverless-compat-version }}" || echo "No changes to commit"
+          git push
       - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: '1.20.0'
       - run: |
-          chmod +x bin/linux-amd64/datadog-serverless-compat
+          chmod +x datadogserverlesscompat/internal/bin/linux-amd64/datadog-serverless-compat
       - run: go mod tidy
       - run: go test -v ./...
-      - run: GOPROXY=proxy.golang.org go list -m github.com/DataDog/datadog-serverless-compat-go/datadogserverlesscompat
-      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: dist
-          path: dist
 
   release:
     if: github.event.inputs.publish-package == 'Build and Publish'

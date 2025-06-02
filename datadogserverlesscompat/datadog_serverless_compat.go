@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-//go:embed internal/artifact/*
+//go:embed internal/bin/*
 var binFS embed.FS
 
 // ddlog is the logger for the Datadog Serverless Compatibility Layer
@@ -78,7 +78,7 @@ func GetBinaryPath() string {
 
 	// Extract the embedded binary to the temp directory
 	binaryPath := filepath.Join(tempDir, filepath.Base(binaryName))
-	binaryData, err := binFS.ReadFile(filepath.Join("internal", "artifact", binaryName))
+	binaryData, err := binFS.ReadFile(filepath.Join("internal", "bin", binaryName))
 	if err != nil {
 		ddlog.Fatalf("Failed to read embedded binary: %v", err)
 	}
