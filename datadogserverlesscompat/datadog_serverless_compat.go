@@ -3,7 +3,6 @@ package datadogserverlesscompat
 import (
 	"embed"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -16,7 +15,7 @@ import (
 var binFS embed.FS
 
 // ddlog is the logger for the Datadog Serverless Compatibility Layer
-var ddlog *log.Logger
+var ddlog *slog.Logger
 
 // Version is the current version of the package
 const Version = "v0.1.0"
@@ -35,18 +34,20 @@ func init() {
 }
 
 func initLogger() {
-	handler := slog.NewJSONHandler(os.Stdout, nil)
 	levelStr := strings.ToLower(os.Getenv("DD_LOG_LEVEL"))
+	var level slog.Level
 	switch levelStr {
 	case "debug":
-		ddlog = slog.NewLogLogger(handler, slog.LevelDebug)
+		level = slog.LevelDebug
 	case "warn":
-		ddlog = slog.NewLogLogger(handler, slog.LevelWarn)
+		level = slog.LevelWarn
 	case "error":
-		ddlog = slog.NewLogLogger(handler, slog.LevelError)
+		level = slog.LevelError
 	default:
-		ddlog = slog.NewLogLogger(handler, slog.LevelInfo)
+		level = slog.LevelInfo
 	}
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
+	ddlog = slog.New(handler)
 }
 
 // GetEnvironment detects the current cloud environment based on environment variables
@@ -56,7 +57,6 @@ func GetEnvironment() CloudEnvironment {
 	} else if os.Getenv("K_SERVICE") != "" && os.Getenv("FUNCTION_TARGET") != "" {
 		return GoogleCloudRunFunction1stGen
 	}
-
 	return Unknown
 }
 
@@ -67,10 +67,10 @@ func GetBinaryPath() string {
 		return userPath
 	}
 
-	// Create a temporary directory for the binary
 	tempDir, err := os.MkdirTemp("", "datadog-serverless-compat")
 	if err != nil {
-		ddlog.Fatalf("Failed to create temp directory: %v", err)
+		ddlog.Error("Failed to create temp directory", "error", err)
+		os.Exit(1)
 	}
 
 	// Determine the appropriate binary path based on the Linux OS for GCP Cloud Functions
@@ -80,11 +80,13 @@ func GetBinaryPath() string {
 	binaryPath := filepath.Join(tempDir, filepath.Base(binaryName))
 	binaryData, err := binFS.ReadFile(filepath.Join("internal", "bin", binaryName))
 	if err != nil {
-		ddlog.Fatalf("Failed to read embedded binary: %v", err)
+		ddlog.Error("Failed to read embedded binary", "error", err)
+		os.Exit(1)
 	}
 
 	if err := os.WriteFile(binaryPath, binaryData, 0755); err != nil {
-		ddlog.Fatalf("Failed to write binary to temp directory: %v", err)
+		ddlog.Error("Failed to write binary to temp directory", "error", err)
+		os.Exit(1)
 	}
 
 	return binaryPath
@@ -92,33 +94,33 @@ func GetBinaryPath() string {
 
 // setPackageVersion sets the package version in the environment
 func setPackageVersion() {
-	ddlog.Printf("Setting DD_SERVERLESS_COMPAT_VERSION to %s", Version)
+	ddlog.Info("Setting package version", "version", Version)
 	os.Setenv("DD_SERVERLESS_COMPAT_VERSION", Version)
 }
 
 // Start starts the Datadog Serverless Compatibility Layer
 func Start() error {
 	environment := GetEnvironment()
-	ddlog.Printf("Environment detected: %s", environment)
+	ddlog.Info("Environment detected", "environment", environment)
 
 	if environment == Unknown {
 		return fmt.Errorf("%s environment detected, will not start the Datadog Serverless Compatibility Layer", environment)
 	}
 
-	ddlog.Printf("Platform detected: %s", runtime.GOOS)
+	ddlog.Info("Platform detected", "platform", runtime.GOOS)
 
-	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
-		return fmt.Errorf("Platform %s detected, the Datadog Serverless Compatibility Layer is only supported on Windows and Linux", runtime.GOOS)
+	if runtime.GOOS != "linux" {
+		return fmt.Errorf("Platform %s detected, the Datadog Serverless Compatibility Layer is only supported on Linux", runtime.GOOS)
 	}
 
 	binaryPath := GetBinaryPath()
-	ddlog.Printf("Spawning process from binary at path %s", binaryPath)
+	ddlog.Info("Spawning process", "binary_path", binaryPath)
 
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		ddlog.Printf("Serverless Compatibility Layer did not start, could not find binary at path %s", binaryPath)
+		ddlog.Error("Serverless Compatibility Layer did not start", "error", "binary not found", "path", binaryPath)
 		return fmt.Errorf("Serverless Compatibility Layer did not start, could not find binary at path %s", binaryPath)
 	}
-	ddlog.Printf("Binary path found: %s", binaryPath)
+	ddlog.Info("Binary found", "path", binaryPath)
 	setPackageVersion()
 
 	cmd := exec.Command(binaryPath)
