@@ -23,7 +23,7 @@ func TestGetEnvironment(t *testing.T) {
 	os.Unsetenv("FUNCTIONS_WORKER_RUNTIME")
 	os.Setenv("FUNCTION_NAME", "test-function")
 	os.Setenv("GCP_PROJECT", "test-project")
-	env := GetEnvironment()
+	env := getEnvironment()
 	if env != GoogleCloudRunFunction1stGen {
 		t.Errorf("Expected GoogleCloudRunFunction1stGen environment, got %v", env)
 	}
@@ -31,7 +31,7 @@ func TestGetEnvironment(t *testing.T) {
 	// Test Unknown environment
 	os.Unsetenv("FUNCTION_NAME")
 	os.Unsetenv("GCP_PROJECT")
-	env = GetEnvironment()
+	env = getEnvironment()
 	if env != Unknown {
 		t.Errorf("Expected Unknown environment, got %v", env)
 	}
@@ -39,7 +39,7 @@ func TestGetEnvironment(t *testing.T) {
 
 
 func TestGetBinaryPath(t *testing.T) {
-	path := GetBinaryPath()
+	path := getBinaryPath()
 
 	info, err := os.Stat(path)
 	if err != nil {

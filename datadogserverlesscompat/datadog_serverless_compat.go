@@ -14,26 +14,8 @@ import (
 //go:embed internal/bin/*
 var binFS embed.FS
 
-// ddlog is the logger for the Datadog Serverless Compatibility Layer
-var ddlog *slog.Logger
-
-// Version is the current version of the package
-const Version = "v0.1.0"
-
-// CloudEnvironment represents the different serverless environments supported
-type CloudEnvironment string
-
-const (
-	GoogleCloudRunFunction1stGen CloudEnvironment = "Google Cloud Run Function 1st gen"
-	Unknown                      CloudEnvironment = "Unknown"
-)
-
-// init initializes the Datadog Serverless Compatibility Layer on package import
-func init() {
-	initLogger()
-}
-
-func initLogger() {
+// ddlog is the logger for the Datadog Serverless Compatibility Layer based on the DD_LOG_LEVEL environment variable
+var ddlog = func() *slog.Logger {
 	levelStr := strings.ToLower(os.Getenv("DD_LOG_LEVEL"))
 	var level slog.Level
 	switch levelStr {
@@ -47,11 +29,22 @@ func initLogger() {
 		level = slog.LevelInfo
 	}
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
-	ddlog = slog.New(handler)
-}
+	return slog.New(handler)
+}()
 
-// GetEnvironment detects the current cloud environment based on environment variables
-func GetEnvironment() CloudEnvironment {
+// Version is the current version of the package
+const Version = "v0.1.0"
+
+// cloudEnvironment represents the different serverless environments supported
+type cloudEnvironment string
+
+const (
+	GoogleCloudRunFunction1stGen cloudEnvironment = "Google Cloud Run Function 1st gen"
+	Unknown                      cloudEnvironment = "Unknown"
+)
+
+// getEnvironment detects the current cloud environment based on environment variables
+func getEnvironment() cloudEnvironment {
 	if os.Getenv("FUNCTION_NAME") != "" && os.Getenv("GCP_PROJECT") != "" {
 		return GoogleCloudRunFunction1stGen
 	} else if os.Getenv("K_SERVICE") != "" && os.Getenv("FUNCTION_TARGET") != "" {
@@ -60,8 +53,8 @@ func GetEnvironment() CloudEnvironment {
 	return Unknown
 }
 
-// GetBinaryPath returns the path to the datadog-serverless-compat binary
-func GetBinaryPath() string {
+// getBinaryPath returns the path to the datadog-serverless-compat binary
+func getBinaryPath() string {
 	// Use user defined path if provided
 	if userPath := os.Getenv("DD_SERVERLESS_COMPAT_PATH"); userPath != "" {
 		return userPath
@@ -98,9 +91,9 @@ func setPackageVersion() {
 	os.Setenv("DD_SERVERLESS_COMPAT_VERSION", Version)
 }
 
-// Start starts the Datadog Serverless Compatibility Layer
+// Start initializes the Datadog Serverless Compatibility Layer by spawning the internal binary process, which will send traces and statsd metrics to Datadog
 func Start() error {
-	environment := GetEnvironment()
+	environment := getEnvironment()
 	ddlog.Info("Environment detected", "environment", environment)
 
 	if environment == Unknown {
@@ -113,7 +106,7 @@ func Start() error {
 		return fmt.Errorf("Platform %s detected, the Datadog Serverless Compatibility Layer is only supported on Linux", runtime.GOOS)
 	}
 
-	binaryPath := GetBinaryPath()
+	binaryPath := getBinaryPath()
 	ddlog.Info("Spawning process", "binary_path", binaryPath)
 
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
