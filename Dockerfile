@@ -2,14 +2,12 @@ FROM golang:1.23
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
-
 COPY . .
+RUN cd datadogserverlesscompat && go mod download
 
 # Set environment variables for testing
 ENV FUNCTION_NAME=test-function
 ENV GCP_PROJECT=test-project
 
-
-CMD ["go", "test", "-v", "./..."]
+WORKDIR /app/datadogserverlesscompat
+CMD ["go", "test", "-v", "."]
