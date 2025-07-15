@@ -38,7 +38,7 @@ var ddlog = func() *slog.Logger {
 }()
 
 // Version is the current version of the package
-const Version = "v0.1.0"
+const Version = "v0.2.0"
 
 // cloudEnvironment represents the different serverless environments supported
 type cloudEnvironment string
