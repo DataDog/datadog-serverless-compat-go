@@ -2,6 +2,14 @@
 
 Datadog library for Go to enable tracing and custom metric submission from [Google Cloud Run Functions (1st gen)](https://cloud.google.com/functions/1stgendocs/concepts/overview). 
 
+## Inventory version metadata
+
+With `DD_SERVERLESS_COMPAT_METADATA_ENABLED=true`, inventory reports the wrapper package as
+`serverless_compat_runtime_version`, the embedded binary release as
+`serverless_compat_binary_version`, and the language engine in `runtime`.
+`DD_SERVERLESS_COMPAT_PATH` selects a custom binary but does not change the wrapper package version.
+The binary must supply its own embedded version; an unversioned binary must not inherit the wrapper version.
+
 # Getting Started
 
 - [Install Serverless Monitoring for Google Cloud Run Functions (1st gen)](https://docs.datadoghq.com/serverless/google_cloud_run/functions_1st_gen/?tab=go)

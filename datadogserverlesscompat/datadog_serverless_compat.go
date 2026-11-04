@@ -94,6 +94,7 @@ func getBinaryPath() string {
 func setPackageVersion() {
 	ddlog.Info("Setting package version", "version", Version)
 	os.Setenv("DD_SERVERLESS_COMPAT_VERSION", Version)
+	os.Setenv("GO_VERSION", strings.TrimPrefix(runtime.Version(), "go"))
 }
 
 // Start initializes the Datadog Serverless Compatibility Layer by spawning the internal binary process, which will send traces and statsd metrics to Datadog
