@@ -21,16 +21,23 @@ func TestMain(m *testing.M) {
 func TestChildVersionEnvironment(t *testing.T) {
 	t.Setenv("DD_SERVERLESS_COMPAT_VERSION", "stale")
 	t.Setenv("GO_VERSION", "stale")
+	t.Setenv("DD_SERVERLESS_COMPAT_RUNTIME", "stale")
 	t.Setenv("DD_SERVICE", "keep-me")
-	setPackageVersion()
 	child := exec.Command("/custom/compat")
+	setPackageVersion(child)
 	for _, expected := range []string{
 		"DD_SERVERLESS_COMPAT_VERSION=" + Version,
-		"GO_VERSION=" + strings.TrimPrefix(runtime.Version(), "go"),
+		"DD_SERVERLESS_COMPAT_RUNTIME=" + runtime.Version(),
+		"GO_VERSION=stale",
 		"DD_SERVICE=keep-me",
 	} {
 		if !strings.Contains("\n"+strings.Join(child.Environ(), "\n")+"\n", "\n"+expected+"\n") {
 			t.Errorf("child environment missing %q", expected)
+		}
+	}
+	for _, key := range []string{"DD_SERVERLESS_COMPAT_VERSION", "DD_SERVERLESS_COMPAT_RUNTIME", "GO_VERSION"} {
+		if got := os.Getenv(key); got != "stale" {
+			t.Errorf("parent %s changed to %q", key, got)
 		}
 	}
 }

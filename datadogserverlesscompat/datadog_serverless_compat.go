@@ -90,11 +90,13 @@ func getBinaryPath() string {
 	return binaryPath
 }
 
-// setPackageVersion sets the package version in the environment
-func setPackageVersion() {
+// setPackageVersion supplies wrapper and language versions to the child process.
+func setPackageVersion(cmd *exec.Cmd) {
 	ddlog.Info("Setting package version", "version", Version)
-	os.Setenv("DD_SERVERLESS_COMPAT_VERSION", Version)
-	os.Setenv("GO_VERSION", strings.TrimPrefix(runtime.Version(), "go"))
+	cmd.Env = append(os.Environ(),
+		"DD_SERVERLESS_COMPAT_VERSION="+Version,
+		"DD_SERVERLESS_COMPAT_RUNTIME="+runtime.Version(),
+	)
 }
 
 // Start initializes the Datadog Serverless Compatibility Layer by spawning the internal binary process, which will send traces and statsd metrics to Datadog
@@ -120,9 +122,8 @@ func Start() error {
 		return fmt.Errorf("Serverless Compatibility Layer did not start, could not find binary at path %s", binaryPath)
 	}
 	ddlog.Info("Binary found", "path", binaryPath)
-	setPackageVersion()
-
 	cmd := exec.Command(binaryPath)
+	setPackageVersion(cmd)
 	// Inherit standard input, output, and error from the parent
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
