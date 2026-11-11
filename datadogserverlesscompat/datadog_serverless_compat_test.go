@@ -18,6 +18,12 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestVersion(t *testing.T) {
+	if Version == "" {
+		t.Error("Version should not be empty")
+	}
+}
+
 func TestChildVersionEnvironment(t *testing.T) {
 	t.Setenv("DD_SERVERLESS_COMPAT_VERSION", "stale")
 	t.Setenv("GO_VERSION", "stale")
