@@ -7,9 +7,11 @@ package datadogserverlesscompat
 
 import (
 	"os"
+	"os/exec"
+	"runtime"
+	"strings"
 	"testing"
 )
-
 
 func TestMain(m *testing.M) {
 	code := m.Run()
@@ -19,6 +21,30 @@ func TestMain(m *testing.M) {
 func TestVersion(t *testing.T) {
 	if Version == "" {
 		t.Error("Version should not be empty")
+	}
+}
+
+func TestChildVersionEnvironment(t *testing.T) {
+	t.Setenv("DD_SERVERLESS_COMPAT_VERSION", "stale")
+	t.Setenv("GO_VERSION", "stale")
+	t.Setenv("DD_SERVERLESS_COMPAT_RUNTIME", "stale")
+	t.Setenv("DD_SERVICE", "keep-me")
+	child := exec.Command("/custom/compat")
+	setPackageVersion(child)
+	for _, expected := range []string{
+		"DD_SERVERLESS_COMPAT_VERSION=" + Version,
+		"DD_SERVERLESS_COMPAT_RUNTIME=" + runtime.Version(),
+		"GO_VERSION=stale",
+		"DD_SERVICE=keep-me",
+	} {
+		if !strings.Contains("\n"+strings.Join(child.Environ(), "\n")+"\n", "\n"+expected+"\n") {
+			t.Errorf("child environment missing %q", expected)
+		}
+	}
+	for _, key := range []string{"DD_SERVERLESS_COMPAT_VERSION", "DD_SERVERLESS_COMPAT_RUNTIME", "GO_VERSION"} {
+		if got := os.Getenv(key); got != "stale" {
+			t.Errorf("parent %s changed to %q", key, got)
+		}
 	}
 }
 
@@ -41,7 +67,6 @@ func TestGetEnvironment(t *testing.T) {
 		t.Errorf("Expected Unknown environment, got %v", env)
 	}
 }
-
 
 func TestGetBinaryPath(t *testing.T) {
 	path := getBinaryPath()
